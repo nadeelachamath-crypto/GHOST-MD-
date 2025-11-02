@@ -36,7 +36,7 @@ cmd(
       if (!fs.existsSync(outputDir)) fs.mkdirSync(outputDir);
 
       const outputFile = path.join(outputDir, "xhamster_video.mp4");
-      const cookiesFile = path.join(__dirname, "cookies/xhamster.txt"); // <== create this file!
+      const cookiesFile = path.join(__dirname, "../cookies/xhamster.txt"); // ✅ Corrected path
 
       const command = `yt-dlp -f "best[height<=${quality}]" "${url}" --cookies "${cookiesFile}" -o "${outputFile}" --write-info-json --quiet`;
 
@@ -85,3 +85,4 @@ cmd(
     }
   }
 );
+ 
