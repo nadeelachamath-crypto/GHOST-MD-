@@ -2,11 +2,12 @@ const { cmd } = require("../command");
 const ytsr = require("yt-search");
 const ytdlp = require("yt-dlp-exec");
 const ffmpeg = require("fluent-ffmpeg");
+const ffmpegInstaller = require("@ffmpeg-installer/ffmpeg");
 const fs = require("fs-extra");
 const path = require("path");
 
-// Optional: Set ffmpeg path if not in system PATH
-// ffmpeg.setFfmpegPath("./bin/ffmpeg");
+// 🔧 Set FFmpeg path from npm installer
+ffmpeg.setFfmpegPath(ffmpegInstaller.path);
 
 const COOKIES_PATH = "cookies/yt.txt";
 
@@ -21,6 +22,7 @@ cmd(
   async (robin, mek, m, { from, q, reply }) => {
     const id = Date.now();
     const tempDir = `./temp/${id}`;
+
     try {
       if (!q) return reply("*Please provide a song name or YouTube URL.*");
 
@@ -33,7 +35,6 @@ cmd(
       const webmPath = path.join(tempDir, "audio.webm");
       const mp3Path = path.join(tempDir, "audio.mp3");
 
-      // 🎵 Song description
       const desc = `
 *🎵 GHOST SONG DOWNLOADER 👻*
 
@@ -53,33 +54,30 @@ cmd(
         { quoted: mek }
       );
 
-      // 🔄 Auto-update yt-dlp to latest version
+      // 🔄 Update yt-dlp
       await ytdlp([], { update: true }).catch(() => {
-        console.log("⚠️ yt-dlp update skipped or failed (network issue)");
+        console.log("⚠️ yt-dlp update failed");
       });
 
-      // 🎧 Download best available audio format
+      // 🎧 Download best audio
       await ytdlp(data.url, {
         output: webmPath,
-        format: "bestaudio/best", // ✅ dynamic format
+        format: "bestaudio/best",
         cookies: COOKIES_PATH,
         quiet: true,
       });
 
-      // 🎶 Convert webm → mp3
+      // 🎶 Convert WebM → MP3
       await new Promise((resolve, reject) => {
         ffmpeg(webmPath)
           .audioCodec("libmp3lame")
           .audioBitrate(320)
           .on("end", resolve)
-          .on("error", (err) => {
-            console.error("❌ FFmpeg error:", err);
-            reject(err);
-          })
+          .on("error", reject)
           .save(mp3Path);
       });
 
-      // ⏱️ Duration limit (max 30 minutes)
+      // ⏱️ Limit (30 mins)
       let totalSeconds = 0;
       if (data.timestamp) {
         const parts = data.timestamp.split(":").map(Number);
@@ -94,7 +92,7 @@ cmd(
         return reply("⏱️ Audio limit is 30 minutes.");
       }
 
-      // 🎤 Send MP3 as audio + document
+      // 🎤 Send MP3
       await robin.sendMessage(
         from,
         {
